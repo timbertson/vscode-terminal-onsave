@@ -42,7 +42,7 @@ class Impl {
 	private async trigger(command: Command): Promise<void> {
 		if (vscode.window.activeTerminal) {
 			console.log("Running: "+this.currentCommand);
-			vscode.window.activeTerminal.sendText(command.value, true);
+			// await vscode.commands.executeCommand('workbench.action.terminal.clear');
 			await vscode.commands.executeCommand('workbench.action.terminal.scrollToBottom');
 			vscode.window.activeTerminal.sendText(command.value, true);
 		} else {
