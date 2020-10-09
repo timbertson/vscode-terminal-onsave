@@ -55,6 +55,7 @@ class Impl {
 		const state = this.ctx.globalState
 		const current = state.get<string[]>(key) || [];
 		const selected = await this.prompt(current);
+		console.log("selected:", selected)
 		if (selected != null) {
 			// bump selected to the first entry
 			const updated = current.filter((entry) => entry != selected.value);
@@ -70,54 +71,38 @@ class Impl {
 
 	public prompt(history: string[]): Promise<Command|null> {
 		const quickPick = vscode.window.createQuickPick()
-		let timeout: NodeJS.Timeout|null = null;
-		const cancelTimeout = () => {
-			if(timeout != null) {
-				clearTimeout(timeout)
-				timeout = null
-			}
-		}
-		
 		quickPick.placeholder = 'Enter a terminal command, or press <Esc> to disable'
 		quickPick.canSelectMany = false
-		const historyItems: () => {label:string}[] = (() => {
-			let base = history.map(label => ({ label }));
-			return () => base.slice()
-		})()
-		quickPick.items = historyItems()
+		quickPick.items = history.map(label => ({ label }));
+		quickPick.activeItems = []
+
 		quickPick.onDidChangeValue(() => {
-			// If it's a new item, make an entry for it.
-			// To reduce redraws, we do this after a slight delay
-			cancelTimeout()
-			timeout = setTimeout(() => {
-				if (quickPick.value.trim().length > 0 && !history.includes(quickPick.value)) {
-					const newItems = historyItems();
-					newItems.unshift({ label: quickPick.value });
-					quickPick.items = newItems
-				}
-			}, 100);
+			quickPick.activeItems = []
 		})
+
+		// deferred by setTimeout to ensure `onDidChangeValue` takes effect first
+		quickPick.onDidChangeActive(() => setTimeout(() => {
+			const activeItem = quickPick.activeItems[0]
+			if (activeItem) {
+				quickPick.value = activeItem.label
+			}
+		}, 1))
+	
 		const manualButton = {
 			iconPath: new vscode.ThemeIcon('play-circle'),
 			tooltip: "Trigger manually",
 		};
 		quickPick.buttons = [manualButton];
-	
+
 		return new Promise<Command|null>((resolve) => {
 			const accept = (button: vscode.QuickInputButton|null) => {
-				const active = quickPick.activeItems[0]
-				if (active !== undefined) {
-					resolve(new Command(active.label, button === manualButton))
-				} else {
-					resolve(null)
-				}
+				resolve(new Command(quickPick.value, button === manualButton))
 			}
 			quickPick.onDidAccept(() => accept(null))
 			quickPick.onDidHide(() => resolve(null))
 			quickPick.onDidTriggerButton((button) => accept(button))
 			quickPick.show()
 		}).finally(() => {
-			cancelTimeout()
 			quickPick.dispose()
 		})
 	}
