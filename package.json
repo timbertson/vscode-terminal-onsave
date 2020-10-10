@@ -24,7 +24,17 @@
 				"command": "terminal-onsave.trigger",
 				"title": "Terminal-onsave: Manually trigger"
 			}
-		]
+		],
+		"configuration": {
+			"title": "Terminal-onsave",
+			"properties": {
+				"terminal-onsave.run-first": {
+					"type": "string",
+					"default": "",
+					"description": "Always run this command first (eg `clear`)"
+				}
+			}
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",

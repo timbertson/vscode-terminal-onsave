@@ -41,9 +41,23 @@ class Impl {
 
 	private async trigger(command: Command): Promise<void> {
 		if (vscode.window.activeTerminal) {
-			console.log("Running: "+this.currentCommand);
-			// await vscode.commands.executeCommand('workbench.action.terminal.clear');
-			await vscode.commands.executeCommand('workbench.action.terminal.scrollToBottom');
+			const config = vscode.workspace.getConfiguration('terminal-onsave')
+			console.log("Running:", this.currentCommand);
+
+			// send ctrl+c
+			await vscode.commands.executeCommand("workbench.action.terminal.sendSequence", { text : "\x03" })
+
+			// TODO clear focuses the terminal
+			// if (config.get<boolean>('clear') === true) {
+			// 	await vscode.commands.executeCommand('workbench.action.terminal.clear')
+			// } else {
+			// }
+			await vscode.commands.executeCommand('workbench.action.terminal.scrollToBottom')
+
+			const runFirst = config.get<string>('run-first')
+			if (runFirst != null && runFirst != "") {
+				vscode.window.activeTerminal.sendText(runFirst, true);
+			}
 			vscode.window.activeTerminal.sendText(command.value, true);
 		} else {
 			console.log("No active terminal");
