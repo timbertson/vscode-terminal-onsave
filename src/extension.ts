@@ -11,19 +11,19 @@ class Command {
 }
 
 class Impl {
-	private currentCommand: Command|null = null;
+	private currentCommand: Command | null = null;
 	private ctx: vscode.ExtensionContext;
-	
+
 	constructor(ctx: vscode.ExtensionContext) {
 		this.ctx = ctx
 	}
 
-	public setCommand(command: Command|null) {
+	public setCommand(command: Command | null) {
 		this.currentCommand = command;
 		let msg = command == null ? 'Disabled' : (command.manual ? 'Manual run configured...' : 'Run on save configured...');
 		vscode.window.setStatusBarMessage(msg, 2000);
 	}
-	
+
 	public async triggerOnSave(): Promise<void> {
 		if (this.currentCommand != null) {
 			if (!this.currentCommand.manual) {
@@ -31,7 +31,7 @@ class Impl {
 			}
 		}
 	}
-	
+
 	public async triggerManually(): Promise<void> {
 		if (this.currentCommand != null) {
 			await vscode.workspace.saveAll(false)
@@ -45,7 +45,7 @@ class Impl {
 			console.log("Running:", this.currentCommand);
 
 			// send ctrl+c
-			await vscode.commands.executeCommand("workbench.action.terminal.sendSequence", { text : "\x03" })
+			await vscode.commands.executeCommand("workbench.action.terminal.sendSequence", { text: "\x03" })
 
 			// TODO clear focuses the terminal
 			// if (config.get<boolean>('clear') === true) {
@@ -64,7 +64,7 @@ class Impl {
 		}
 	}
 
-	public async promptWithHistory(): Promise<Command|null> {
+	public async promptWithHistory(): Promise<Command | null> {
 		const key = 'history'
 		const state = this.ctx.globalState
 		const current = state.get<string[]>(key) || [];
@@ -75,7 +75,7 @@ class Impl {
 			const updated = current.filter((entry) => entry != selected.value);
 			updated.unshift(selected.value);
 			// then truncate
-			while(updated.length > 10) {
+			while (updated.length > 10) {
 				updated.pop();
 			}
 			await state.update(key, updated)
@@ -83,7 +83,7 @@ class Impl {
 		return selected
 	}
 
-	public prompt(history: string[]): Promise<Command|null> {
+	public prompt(history: string[]): Promise<Command | null> {
 		const quickPick = vscode.window.createQuickPick()
 		quickPick.placeholder = 'Enter a terminal command, or press <Esc> to disable'
 		quickPick.canSelectMany = false
@@ -101,16 +101,20 @@ class Impl {
 				quickPick.value = activeItem.label
 			}
 		}, 1))
-	
+
 		const manualButton = {
 			iconPath: new vscode.ThemeIcon('play-circle'),
 			tooltip: "Trigger manually",
 		};
 		quickPick.buttons = [manualButton];
 
-		return new Promise<Command|null>((resolve) => {
-			const accept = (button: vscode.QuickInputButton|null) => {
-				resolve(new Command(quickPick.value, button === manualButton))
+		return new Promise<Command | null>((resolve) => {
+			const accept = (button: vscode.QuickInputButton | null) => {
+				if (quickPick.value.trim().length == 0) {
+					resolve(null)
+				} else {
+					resolve(new Command(quickPick.value, button === manualButton))
+				}
 			}
 			quickPick.onDidAccept(() => accept(null))
 			quickPick.onDidHide(() => resolve(null))
@@ -133,10 +137,10 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('terminal-onsave.configure', async () => {
 		impl.setCommand(await impl.promptWithHistory());
 	}));
-	
+
 	context.subscriptions.push(vscode.commands.registerCommand('terminal-onsave.trigger', async () => {
 		await impl.triggerManually()
 	}));
 }
 
-export function deactivate() {}
+export function deactivate() { }
