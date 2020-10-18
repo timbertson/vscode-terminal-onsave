@@ -22,6 +22,7 @@ class Impl {
 		this.currentCommand = command;
 		let msg = command == null ? 'Disabled' : (command.manual ? 'Manual run configured...' : 'Run on save configured...');
 		vscode.window.setStatusBarMessage(msg, 2000);
+		this.triggerManually();
 	}
 
 	public async triggerOnSave(): Promise<void> {
