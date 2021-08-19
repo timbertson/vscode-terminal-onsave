@@ -56,10 +56,11 @@ class Impl {
 			await vscode.commands.executeCommand('workbench.action.terminal.scrollToBottom')
 
 			const runFirst = config.get<string>('run-first')
+			const prefix = (config.get<boolean>('bypass-history')) ? ' \n' : ''
 			if (runFirst != null && runFirst != "") {
-				vscode.window.activeTerminal.sendText(runFirst, true);
+				vscode.window.activeTerminal.sendText(prefix + runFirst, true);
 			}
-			vscode.window.activeTerminal.sendText(command.value, true);
+			vscode.window.activeTerminal.sendText(prefix + command.value, true);
 		} else {
 			console.log("No active terminal");
 		}
@@ -92,16 +93,10 @@ class Impl {
 		quickPick.activeItems = []
 
 		quickPick.onDidChangeValue(() => {
-			quickPick.activeItems = []
+			setTimeout(() => {
+				quickPick.activeItems = []
+			}, 1)
 		})
-
-		// deferred by setTimeout to ensure `onDidChangeValue` takes effect first
-		quickPick.onDidChangeActive(() => setTimeout(() => {
-			const activeItem = quickPick.activeItems[0]
-			if (activeItem) {
-				quickPick.value = activeItem.label
-			}
-		}, 1))
 
 		const manualButton = {
 			iconPath: new vscode.ThemeIcon('play-circle'),
@@ -111,10 +106,21 @@ class Impl {
 
 		return new Promise<Command | null>((resolve) => {
 			const accept = (button: vscode.QuickInputButton | null) => {
-				if (quickPick.value.trim().length == 0) {
-					resolve(null)
+				// If there's an active item, pick it
+				const isManual = button === manualButton;
+				const active = quickPick.activeItems[0];
+				console.log("accepted: " + active + " with filter = " + quickPick.value);
+				if (active != null && active.label != quickPick.value) {
+					// active differs from text, adopt active and give a chance to edit
+					quickPick.activeItems = [];
+					quickPick.value = active.label;
 				} else {
-					resolve(new Command(quickPick.value, button === manualButton))
+					// accept current text
+					if (quickPick.value.trim().length == 0) {
+						resolve(null)
+					} else {
+						resolve(new Command(quickPick.value, isManual))
+					}
 				}
 			}
 			quickPick.onDidAccept(() => accept(null))

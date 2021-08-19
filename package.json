@@ -32,6 +32,11 @@
 					"type": "string",
 					"default": "",
 					"description": "Always run this command first (eg `clear`)"
+				},
+				"terminal-onsave.bypass-history": {
+					"type": "boolean",
+					"default": true,
+					"description": "Bypass bash history (prefixes commands with a space)"
 				}
 			}
 		}
