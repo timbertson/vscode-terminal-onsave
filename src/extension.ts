@@ -56,7 +56,7 @@ class Impl {
 			await vscode.commands.executeCommand('workbench.action.terminal.scrollToBottom')
 
 			const runFirst = config.get<string>('run-first')
-			const prefix = (config.get<boolean>('bypass-history')) ? ' \n' : ''
+			const prefix = (config.get<boolean>('bypass-history')) ? ' ' : ''
 			if (runFirst != null && runFirst != "") {
 				vscode.window.activeTerminal.sendText(prefix + runFirst, true);
 			}
